@@ -20,6 +20,10 @@ export default function Lobby (props) {
             return setError('Missing name.');
         }
 
+        if (room) {
+            return setError('Did you mean to join room?');
+        }
+
         SocketManager.createRoom().then(roomId => {
             SocketManager.joinRoom(name, roomId).then(() => {
                 props.onScreenChange('room');

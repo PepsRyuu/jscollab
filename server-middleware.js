@@ -128,6 +128,9 @@ module.exports = function (app) {
         }
 
         if (e.type === 'run-code') {
+            Object.keys(e.editors).forEach(type => {
+                room.editors[type] = e.editors[type];
+            });
             return broadcast(room, member => e); 
         }
 

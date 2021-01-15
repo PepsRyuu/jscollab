@@ -2,6 +2,7 @@ import { useRef, useState, useEffect } from 'preact/hooks';
 import SocketManager from '../../SocketManager';
 import { performEditorChange } from '../../ChangeHandler';
 import Editor from './Editor';
+import Modal from './Modal';
 import './Room.scss';
 
 function setEditorValue (type, value) {
@@ -13,7 +14,9 @@ function setEditorValue (type, value) {
 
 export default function Room () {
     let [ loaded, setLoaded ] = useState(false);
+    let [ showDisconnected, setShowDisconnected ] = useState(false);
     let socketCallback = useRef();
+    let socketCloseCallback = useRef();
     let iframe = useRef();
     let [ roomState, setRoomState ] = useState({ 
         me: '',
@@ -26,7 +29,12 @@ export default function Room () {
     let readonly = roomState.members.findIndex(m => m.name === roomState.me) !== roomState.inControl;
 
     function onRun () {
-        SocketManager.sendMessage({ type: 'run-code' });
+        let editors = Object.entries(window.__editors).reduce((acc, val) => {
+            acc[val[0]] = val[1].getValue();
+            return acc;
+        }, {});
+
+        SocketManager.sendMessage({ type: 'run-code', editors });
     }
 
     function onTakeControl () {
@@ -72,22 +80,21 @@ export default function Room () {
         }
 
         if (msg.type === 'run-code') {
-            let code = Object.entries(window.__editors).reduce((acc, val) => {
-                acc[val[0]] = val[1].getValue();
-                return acc;
-            }, {});
+            for (let type in msg.editors) {
+                setEditorValue(type, msg.editors[type]);
+            }
 
             iframe.current.srcdoc = `
                 <html>
                     <head>
                         <style>
-                            ${code.css}
+                            ${msg.editors.css}
                         </style>
                     </head>
                     <body>
-                        ${code.html}
+                        ${msg.editors.html}
                         <script>
-                            ${code.javascript}
+                            ${msg.editors.javascript}
                         </script>
                     </body>
                 </html>
@@ -95,9 +102,17 @@ export default function Room () {
         }
     };
 
+    socketCloseCallback.current = () => {
+        setShowDisconnected(true);
+    };
+
     useEffect(() => {
         let handle = SocketManager.onMessage(msg => {
             socketCallback.current(msg);
+        });
+
+        SocketManager.onClose(() => {
+            socketCloseCallback.current();
         });
 
         SocketManager.sendMessage({ type: 'trigger-state-sync' });
@@ -167,6 +182,11 @@ export default function Room () {
                     </div>
                 </div>
             </div>
+            {showDisconnected && (
+                <Modal>
+                    <p>You have disconnected. Please refresh and rejoin the room if you wish to resume.</p>
+                </Modal>
+            )}
         </div>
     );
 }

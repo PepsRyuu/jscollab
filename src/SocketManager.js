@@ -26,6 +26,7 @@ function fetch (url, options = {}) {
 }
 
 let messageCallbacks = [];
+let closeCallback;
 
 export default class SocketManager {
     static canJoinRoom (roomId) {
@@ -47,6 +48,10 @@ export default class SocketManager {
                 e = JSON.parse(e.data);
                 messageCallbacks.forEach(cb => cb(e));
             });
+
+            ws.addEventListener('close', e => {
+                closeCallback();
+            });
         });
     }
 
@@ -63,5 +68,9 @@ export default class SocketManager {
                 messageCallbacks.splice(index, 1);
             }
         }
+    }
+
+    static onClose (cb) {
+        closeCallback = cb;
     }
 }
