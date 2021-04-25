@@ -6,6 +6,7 @@ export default function Lobby (props) {
     let [ name, setName ] = useState('');
     let [ room, setRoom ] = useState('');
     let [ error, setError ] = useState('');
+    let [ processing, setProcessing ] = useState(false);
 
     function onNameInput (e) {
         setName(e.target.value.trim());
@@ -24,6 +25,8 @@ export default function Lobby (props) {
             return setError('Did you mean to join room?');
         }
 
+        setProcessing(true);
+
         SocketManager.createRoom().then(roomId => {
             SocketManager.joinRoom(name, roomId).then(() => {
                 props.onScreenChange('room');
@@ -40,9 +43,12 @@ export default function Lobby (props) {
             return setError('Name must be less than 10 characters.');
         }
 
+        setProcessing(true);
+
         SocketManager.canJoinRoom(room).then(res => {
             if (res.exists) {
                 if (res.members.indexOf(name) > -1) {
+                    setProcessing(false);
                     return setError('Name already taken.');
                 }
 
@@ -50,6 +56,7 @@ export default function Lobby (props) {
                     props.onScreenChange('room');
                 });
             } else {
+                setProcessing(false);
                 setError('Room does not exist.');
             }
         });
@@ -62,15 +69,15 @@ export default function Lobby (props) {
                 <div>
                     <p>
                         <span>Name</span>
-                        <input type="text" onInput={onNameInput} />
+                        <input readonly={processing} type="text" onInput={onNameInput} />
                     </p>
                     <p> 
                         <span>Room</span>
-                        <input type="text" onInput={onRoomInput} />
+                        <input readonly={processing} type="text" onInput={onRoomInput} />
                     </p>
                     <p class="buttons">
-                        <button onClick={onCreateRoom}>Create Room</button>
-                        <button onClick={onJoinRoom}>Join Room</button>
+                        <button disabled={processing} onClick={onCreateRoom}>Create Room</button>
+                        <button disabled={processing} onClick={onJoinRoom}>Join Room</button>
                     </p>
                     {error && <p class="error">{error}</p>}
                 </div>
