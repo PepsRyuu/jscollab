@@ -19,7 +19,7 @@
         "@prefresh/nollup": "^0.5.0",
         "babel-preset-preact": "^2.0.0",
         "node-sass": "^5.0.0",
-        "nollup": "^0.13.0",
+        "nollup": "^0.13.13",
         "react-refresh": "^0.8.2",
         "rollup": "^2.10.0",
         "rollup-plugin-babel": "^4.3.3",

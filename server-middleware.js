@@ -76,6 +76,13 @@ module.exports = function (app) {
 
         let ping_interval = setInterval(() => {
             ws.send(JSON.stringify({ type: 'echo', timestamp: performance.now() }));
+            if (!ws._member_timeout) {
+                // Handles situation where no ping response is received
+                // Assume internet connection went down and disconnect them.
+                ws._member_timeout = setTimeout(() => {
+                    ws.close();
+                }, 15000);
+            }
         }, 5000);
 
         ws.on('message', e => {
@@ -107,6 +114,8 @@ module.exports = function (app) {
     function onMessage(e, ws, member, room) {
         if (e.type === 'echo-response') {
             member.ping = performance.now() - e.timestamp;
+            clearTimeout(ws._member_timeout);
+            ws._member_timeout = undefined;
             return broadcast(room, member => ({ type: 'ping-sync', members: room.members }));
         }
 
